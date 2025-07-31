@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mono Ultimo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #333;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(9, calc(8vw));
+      grid-template-rows: repeat(9, calc(8vw));
+      gap: 1vw;
+      background: radial-gradient(circle at 30% 30%, #d2a679, #8c6239);
+      padding: 3vw;
+      border-radius: 5vw;
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.7),
+                  inset 0 0 10px rgba(0, 0, 0, 0.5);
+      max-width: 100vw;
+      max-height: 100vw;
+      box-sizing: border-box;
+    }
+
+    /* Jedes Loch */
+    .hole {
+      width: calc(8vw);
+      height: calc(8vw);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+      background: radial-gradient(circle at 30% 30%, #444 0%, #000 70%);
+      box-shadow: inset -4px -4px 6px rgba(0, 0, 0, 0.6),
+                  inset 4px 4px 6px rgba(255, 255, 255, 0.2);
+    }
+
+    /* Wenn das Loch leer ist (keine Kugel) */
+    .hole.empty {
+      background: radial-gradient(circle at 30% 30%, #222 0%, #000 70%);
+      box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.9),
+                  inset -2px -2px 4px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Wenn eine Kugel da ist */
+    .hole:not(.empty)::after {
+      content: '';
+      width: 70%;
+      height: 70%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #ccc 0%, #666 70%);
+      box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.5),
+                  0 2px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    .hole.selected {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px 4px yellow,
+                  inset -4px -4px 6px rgba(0, 0, 0, 0.6);
+    }
+
+    .hole:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  <h1>Mono Ultimo © Daniel M</h1>
+  <div id="board"></div>
+
+  <script>
+    const board = document.getElementById('board');
+    let selected = null;
+
+    // Layout für Peg Solitaire (33 Löcher)
+    const layout = [
+      '    o    ',
+      '   ooo   ',
+      '  ooooo  ',
+      'ooooxoooo',
+      '  ooooo  ',
+      '   ooo   ',
+      '    o    ',
+    ];
+
+    // Brett aufbauen
+    function buildBoard() {
+      board.innerHTML = '';
+      layout.forEach((row, y) => {
+        [...row].forEach((cell, x) => {
+          if (cell === 'o' || cell === 'x') {
+            const hole = document.createElement('div');
+            hole.classList.add('hole');
+            if (cell === 'x') hole.classList.add('empty');
+            hole.dataset.x = x;
+            hole.dataset.y = y;
+            hole.addEventListener('click', onHoleClick);
+            board.appendChild(hole);
+          } else {
+            const spacer = document.createElement('div');
+            spacer.style.width = 'calc(8vw)';
+            spacer.style.height = 'calc(8vw)';
+            board.appendChild(spacer);
+          }
+        });
+      });
+    }
+
+    function onHoleClick(e) {
+      const hole = e.target;
+      if (hole.classList.contains('empty')) {
+        // Versuche einen Zug
+        if (selected && tryMove(selected, hole)) {
+          selected.classList.remove('selected');
+          selected = null;
+        }
+      } else {
+        // Figur auswählen
+        if (selected) selected.classList.remove('selected');
+        selected = hole;
+        hole.classList.add('selected');
+      }
+    }
+
+    function tryMove(from, to) {
+      const fx = +from.dataset.x;
+      const fy = +from.dataset.y;
+      const tx = +to.dataset.x;
+      const ty = +to.dataset.y;
+
+      if (fx === tx && Math.abs(fy - ty) === 2) {
+        const midY = (fy + ty) / 2;
+        return movePiece(from, to, fx, midY);
+      } else if (fy === ty && Math.abs(fx - tx) === 2) {
+        const midX = (fx + tx) / 2;
+        return movePiece(from, to, midX, fy);
+      }
+      return false;
+    }
+
+    function movePiece(from, to, mx, my) {
+      const mid = findHole(mx, my);
+      if (!mid || mid.classList.contains('empty')) return false;
+
+      mid.classList.add('empty');
+      from.classList.add('empty');
+      to.classList.remove('empty');
+      return true;
+    }
+
+    function findHole(x, y) {
+      return document.querySelector(`.hole[data-x="${x}"][data-y="${y}"]`);
+    }
+
+    buildBoard();
+  </script>
+</body>
+</html>
